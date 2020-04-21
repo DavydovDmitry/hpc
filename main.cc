@@ -3,9 +3,6 @@
 #include "autoreg_driver.hh"
 
 int main() {
-    // just a test
-    // another one
-    //asa
 
 	using namespace autoreg;
 
