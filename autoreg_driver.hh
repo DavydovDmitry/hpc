@@ -39,27 +39,71 @@ struct Autoreg_model {
 	zsize2(zsize)
 	{}
 
+
 	void act() {
-	    int measurings = 10
+	    int measures = 1;
+        double mean_time,  time_taken;
+        std::chrono::system_clock::time_point start, end;
 
-		//echo_parameters();
-		ACF<T> acf_model = approx_acf<T>(alpha, beta, gamm, acf_delta, acf_size);
-		//{ std::ofstream out("acf"); out << acf_model; }
-		AR_coefs<T> ar_coefs = compute_AR_coefs(acf_model);
-		T var_wn = white_noise_variance(ar_coefs, acf_model);
+        echo_parameters();
 
-        std::clog << "White noise generation" << std::endl;
-        auto start = std::chrono::high_resolution_clock::now();
+        std::clog << "--------------------- approx_acf ----------------------------------" << std::endl;
+        start = std::chrono::high_resolution_clock::now();
         std::ios_base::sync_with_stdio(false);
-        Zeta<T> zeta2 = generate_white_noise(zsize2, var_wn);
-        auto end = std::chrono::high_resolution_clock::now();
-        double time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-        time_taken *= 1e-9;
-        std::clog << "Time elapsed:" << time_taken << std::endl;
+		ACF<T> acf_model = approx_acf<T>(alpha, beta, gamm, acf_delta, acf_size);
+        end = std::chrono::high_resolution_clock::now();
+        time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        std::clog << "Time elapsed:" << time_taken * 1e-9 << " sec" << std::endl;
 
+        std::clog << "--------------------- compute_AR_coefs ----------------------------" << std::endl;
+        start = std::chrono::high_resolution_clock::now();
+        std::ios_base::sync_with_stdio(false);
+        AR_coefs<T> ar_coefs = compute_AR_coefs(acf_model);
+        end = std::chrono::high_resolution_clock::now();
+        time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        std::clog << "Time elapsed:" << time_taken * 1e-9 << " sec" << std::endl;
 
-		generate_zeta(ar_coefs, zeta2);
-		Zeta<T> zeta = trim_zeta(zeta2, zsize);
+        T var_wn = white_noise_variance(ar_coefs, acf_model);
+
+        std::clog << "--------------------- generate_white_noise ------------------------" << std::endl;
+        Zeta<T> zeta2;
+        mean_time = 0.0;
+        for (int i=0; i<measures; i++){
+            auto start = std::chrono::high_resolution_clock::now();
+            std::ios_base::sync_with_stdio(false);
+            zeta2 = generate_white_noise(zsize2, var_wn);
+            auto end = std::chrono::high_resolution_clock::now();
+            double time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+            mean_time += time_taken * 1e-9;
+        }
+        std::clog << "Time elapsed:" << mean_time / measures << " sec" << std::endl;
+
+        std::clog << "--------------------- generate_zeta -------------------------------" << std::endl;
+        mean_time = 0.0;
+        for (int i=0; i<measures; i++){
+            auto start = std::chrono::high_resolution_clock::now();
+            std::ios_base::sync_with_stdio(false);
+            generate_zeta(ar_coefs, zeta2);
+            auto end = std::chrono::high_resolution_clock::now();
+            double time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+            mean_time += time_taken * 1e-9;
+        }
+        std::clog << "Time elapsed:" << mean_time / measures << " sec" << std::endl;
+
+        std::clog << "--------------------- trim_zeta -----------------------------------" << std::endl;
+        Zeta<T> zeta;
+        mean_time = 0.0;
+        for (int i=0; i<measures; i++){
+            auto start = std::chrono::high_resolution_clock::now();
+            std::ios_base::sync_with_stdio(false);
+            zeta = trim_zeta(zeta2, zsize);
+            auto end = std::chrono::high_resolution_clock::now();
+            double time_taken = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+            mean_time += time_taken * 1e-9;
+        }
+        std::clog << "Time elapsed:" << mean_time / measures << " sec" << std::endl;
+
+        std::clog << std::endl;
 		write_zeta(zeta);
 	}
 
